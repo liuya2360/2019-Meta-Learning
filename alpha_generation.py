@@ -1,6 +1,11 @@
+#calculate average for possibility then calculate alpha
+
 import csv
 from matplotlib import pyplot as plt 
 import os
+import time 
+
+start = time.time()
 
 home = os.getcwd()
 dataset_folder = os.path.join(home, "artificial-results")
@@ -43,6 +48,7 @@ def get_neighbours(i, n_neighbours, X):
 cnt = 0
 
 for dataset in os.listdir(dataset_folder):
+	new_start = time.time()
 	print("count", cnt)
 	if cnt == 1:
 		break 
@@ -84,54 +90,37 @@ for dataset in os.listdir(dataset_folder):
 	for l in range(3):
 		print("algorithm"+str(l+1))
 		#for each cv
-		alpha_all = []
+		alpha = []
+		X = []
 		for fold in range(10):
 			print("fold", fold)
-			X = []
-			alpha = []
-			for i in range(len(line)):
-				temp = []
-				temp.append(float(line[i][5+10*3*l+fold*3]))
-				temp.append(float(line[i][6+10*3*l+fold*3]))
-				X.append(temp)
+			if fold == 0: 
+				for i in range(len(line)):
+					temp = []
+					temp.append(float(line[i][5+10*3*l+fold*3]))
+					temp.append(float(line[i][6+10*3*l+fold*3]))
+					X.append(temp)
+			else: 
+				for i in range(len(line)): 
+					X[i][0] += float(line[i][5+10*3*l+fold*3])
+					X[i][1] += float(line[i][6+10*3*l+fold*3])
+
+		for i in range(len(X)): 
+			X[i][0] /= 10
+			X[i][1] /= 10
 			
-			for i in range(len(X)): 
-				#print("instance", i)
-				cnt_neighbour_same_label = 0
-				for j in get_neighbours(i, class_wise_cnt[Y[i]],X):
-					if Y[i] == Y[j]: 
-						cnt_neighbour_same_label += 1
-				alpha.append(cnt_neighbour_same_label/(class_wise_cnt[Y[i]]-1))
-
-			alpha_all.append(alpha)
-
-			
-			#save the alpha to the file
-			os.chdir(new_dataset_folder)
-			with open(new_dataset_file, "r") as f:
-				reader = csv.reader(f)
-				data = [row for row in reader]
-			data[0].insert(7+10*4*l+fold*4+cnt, "alpha")
-			for i in range(len(line)):
-				data[i+1].insert(7+10*4*l+fold*4+cnt, alpha[i])
-			with open(new_dataset_file, 'w') as f: 
-				writer = csv.writer(f)
-				writer.writerows(data)
-			os.chdir(dataset_folder)
-
-		#calculate the average alpha over 10 folds
-		ave_alpha = []
-		for i in range(len(alpha_all[0])): 
-			temp  = 0
-			for j in range(len(alpha_all)): 
-				temp += alpha_all[j][i]
-			temp /= len(alpha_all)
-			ave_alpha.append(temp)
+		for i in range(len(X)): 
+			#print("instance", i)
+			cnt_neighbour_same_label = 0
+			for j in get_neighbours(i, class_wise_cnt[Y[i]],X):
+				if Y[i] == Y[j]: 
+					cnt_neighbour_same_label += 1
+			alpha.append(cnt_neighbour_same_label/(class_wise_cnt[Y[i]]-1))
 
 		#plot the distribution of alpha 
 		os.chdir(figure_folder)
 		plt.clf()
-		plt.hist(ave_alpha, bins=20) 
+		plt.hist(alpha, bins=20) 
 		figure_name = dataset[:len(dataset)-12] + '_' + str(l) + ".png"
 		plt.savefig(figure_name, dpi=300)
 
@@ -142,9 +131,12 @@ for dataset in os.listdir(dataset_folder):
 			data = [row for row in reader]
 		data[0].append("algorithm"+str(l))
 		for i in range(len(line)): 
-			data[i+1].append(ave_alpha[i])
+			data[i+1].append(alpha[i])
 		with open(new_dataset_file, "w") as f:
 			writer = csv.writer(f)
 			writer.writerows(data)
 		os.chdir(dataset_folder)
+	end = time.time()
+	print(str(dataset[:len(dataset)-12]+" running time: "+str(end-new_start)))
+	print("Already running for "+str(end-start))
 	cnt += 1
