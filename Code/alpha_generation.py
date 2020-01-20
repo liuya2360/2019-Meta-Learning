@@ -9,7 +9,7 @@ start = time.time()
 
 home = os.getcwd()
 dataset_folder = os.path.join(home, "artificial-results")
-figure_folder = os.path.join(home, "distribution_old")
+figure_folder = os.path.join(home, "distribution")
 if not os.path.exists(figure_folder):
 	os.mkdir(figure_folder)
 new_dataset_folder = os.path.join(home, "new_datasets")
